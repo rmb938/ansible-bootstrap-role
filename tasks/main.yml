@@ -1,0 +1,85 @@
+---
+# TODO: CIS benchmark fixing once it's released for 24.04
+
+# TODO: add NTP server
+
+- name: Set timezone
+  community.general.timezone:
+    name: America/Chicago
+
+- name: Configure Auto Upgrades
+  ansible.builtin.template:
+    src: etc/apt/apt.conf.d/50unattended-upgrades
+    dest: /etc/apt/apt.conf.d/50unattended-upgrades
+    mode: "0644"
+  register: unattended_upgrades_50
+
+- name: Restart unattended-upgrades # noqa: no-handler
+  ansible.builtin.systemd:
+    name: unattended-upgrades
+    state: restarted
+  when: unattended_upgrades_50.changed
+
+- name: Install tools
+  ansible.builtin.package:
+    name:
+      - net-tools
+      - htop
+    state: present
+
+- name: Install Fluentbit keyring
+  ansible.builtin.get_url:
+    url: https://packages.fluentbit.io/fluentbit.key
+    dest: /usr/share/keyrings/fluentbit-keyring.asc
+    checksum: sha256:df248e2d7103ca62cb683c20a077198d0fb0a7f79dbf53a604af0317de3b4711
+    mode: "0644"
+
+- name: Add Fluentbit repo
+  ansible.builtin.apt_repository:
+    repo: >
+      deb [signed-by=/usr/share/keyrings/fluentbit-keyring.asc]
+      https://packages.fluentbit.io/ubuntu/noble noble main
+    state: present
+
+- name: Install fluentbit
+  ansible.builtin.package:
+    name: fluent-bit
+    state: present
+
+- name: Configure fluentbit
+  ansible.builtin.template:
+    src: etc/fluent-bit/fluent-bit.conf
+    dest: /etc/fluent-bit/fluent-bit.conf
+    mode: "0660"
+    owner: root
+    group: root
+  register: fluentbit_config
+
+- name: Configure fluentbit Parsers
+  ansible.builtin.template:
+    src: etc/fluent-bit/parsers.conf
+    dest: /etc/fluent-bit/parsers.conf
+    mode: "0666"
+    owner: root
+    group: root
+  register: fluentbit_parsers
+
+- name: Create fluentbit state directory
+  ansible.builtin.file:
+    path: /var/lib/fluent-bit
+    mode: "0755"
+    owner: root
+    group: root
+    state: directory
+
+- name: Start fluentbit
+  ansible.builtin.systemd:
+    service: fluent-bit
+    state: started
+    enabled: true
+
+- name: Restart fluentbit if config changed # noqa: no-handler
+  ansible.builtin.systemd:
+    name: fluent-bit
+    state: restarted
+  when: fluentbit_config.changed or fluentbit_parsers.changed
