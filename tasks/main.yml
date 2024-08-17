@@ -25,6 +25,7 @@
     name:
       - net-tools
       - htop
+      - unzip
     state: present
 
 - name: Install Prometheus Node Exporter
