@@ -27,6 +27,18 @@
       - htop
     state: present
 
+- name: Install Prometheus Node Exporter
+  ansible.builtin.package:
+    name:
+      - prometheus-node-exporter
+    state: present
+
+- name: Start and Enable Prometheus Node Exporter
+  ansible.builtin.systemd:
+    service: prometheus-node-exporter
+    state: started
+    enabled: true
+
 - name: Install Fluentbit keyring
   ansible.builtin.get_url:
     url: https://packages.fluentbit.io/fluentbit.key
