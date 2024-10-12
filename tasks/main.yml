@@ -7,6 +7,12 @@
   community.general.timezone:
     name: America/Chicago
 
+- name: Install unattended-upgrades
+  ansible.builtin.package:
+    name:
+      - unattended-upgrades
+    state: present
+
 - name: Configure Auto Upgrades
   ansible.builtin.template:
     src: etc/apt/apt.conf.d/50unattended-upgrades
@@ -18,6 +24,7 @@
   ansible.builtin.systemd:
     name: unattended-upgrades
     state: restarted
+    enabled: true
   when: unattended_upgrades_50.changed
 
 - name: Install tools
