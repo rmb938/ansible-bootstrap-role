@@ -21,6 +21,8 @@ Unattended-Upgrade::Allowed-Origins {
         // apt-cache policy
         // auto upgrade tailscale repo, it has no a=
         "Tailscale:";
+
+        // TODO: allow adding more origins via var
 };
 
 // Python regular expressions, matching packages to exclude from upgrading
