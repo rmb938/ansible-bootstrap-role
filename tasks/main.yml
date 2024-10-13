@@ -33,6 +33,7 @@
       - net-tools
       - htop
       - unzip
+      - gnupg2
     state: present
 
 - name: Install Prometheus Node Exporter
