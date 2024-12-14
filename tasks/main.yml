@@ -36,6 +36,29 @@
       - gnupg2
     state: present
 
+- name: Install Step CLI
+  # TODO: smallstep doesn't have a apt repo, so we need a way to keep this updated
+  ansible.builtin.apt:
+    deb: https://dl.smallstep.com/cli/docs-cli-install/latest/step-cli_amd64.deb
+
+- name: Configure Step CLI
+  ansible.builtin.shell: "step ca bootstrap --ca-url https://cuboid-topi.rmb1993-gmail-com.ca.smallstep.com --fingerprint eb136a5118931a2306964469705323521dda8c43d26ec67e1c5508eb123f9c70"
+  environment:
+    STEPPATH: "/etc/step"
+  creates: /etc/step/config/defaults.json
+
+- name: Copy SmallStep CA to System Store
+  ansible.builtin.copy:
+    remote_src: true
+    src: /etc/step/certs/root_ca.crt
+    dest: /usr/local/share/ca-certificates/smallstep.crt
+    mode: "0644"
+  register: smallstep_ca_copy
+
+- name: Update CA Trust
+  ansible.builtin.command: update-ca-certificates
+  when: smallstep_ca_copy is changed
+
 - name: Install Prometheus Node Exporter
   ansible.builtin.package:
     name:
