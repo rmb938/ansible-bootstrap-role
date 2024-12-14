@@ -43,9 +43,10 @@
 
 - name: Configure Step CLI
   ansible.builtin.shell: "step ca bootstrap --ca-url https://cuboid-topi.rmb1993-gmail-com.ca.smallstep.com --fingerprint eb136a5118931a2306964469705323521dda8c43d26ec67e1c5508eb123f9c70"
+  args:
+    creates: /etc/step/config/defaults.json
   environment:
     STEPPATH: "/etc/step"
-  creates: /etc/step/config/defaults.json
 
 - name: Copy SmallStep CA to System Store
   ansible.builtin.copy:
