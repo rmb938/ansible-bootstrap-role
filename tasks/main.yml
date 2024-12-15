@@ -34,6 +34,7 @@
       - htop
       - unzip
       - gnupg2
+      - vim
     state: present
 
 - name: Install Step CLI
@@ -59,6 +60,25 @@
 - name: Update CA Trust
   ansible.builtin.command: update-ca-certificates
   when: smallstep_ca_copy is changed
+
+- name: Place SmallStep SystemD Renewal Service
+  ansible.builtin.template:
+    src: etc/systemd/system/cert-renewer@.service
+    dest: /etc/systemd/system/cert-renewer@.service
+    mode: "0644"
+  register: smallstep_ca_systemd_renewal_service_template
+
+- name: Place SmallStep SystemD Renewal Timer
+  ansible.builtin.template:
+    src: etc/systemd/system/cert-renewer@.timer
+    dest: /etc/systemd/system/cert-renewer@.timer
+    mode: "0644"
+  register: smallstep_ca_systemd_renewal_timer_template
+
+- name: Reload SystemD # noqa: no-handler
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: smallstep_ca_systemd_renewal_service_template.changed or smallstep_ca_systemd_renewal_timer_template.changed
 
 - name: Install Prometheus Node Exporter
   ansible.builtin.package:
