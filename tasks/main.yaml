@@ -43,7 +43,7 @@
     deb: https://dl.smallstep.com/cli/docs-cli-install/latest/step-cli_amd64.deb
 
 - name: Configure Step CLI
-  ansible.builtin.shell: "step ca bootstrap --ca-url https://cuboid-topi.rmb1993-gmail-com.ca.smallstep.com --fingerprint eb136a5118931a2306964469705323521dda8c43d26ec67e1c5508eb123f9c70"
+  ansible.builtin.command: "step ca bootstrap --ca-url https://cuboid-topi.rmb1993-gmail-com.ca.smallstep.com --fingerprint eb136a5118931a2306964469705323521dda8c43d26ec67e1c5508eb123f9c70" # noqa: yaml[line-length]
   args:
     creates: /etc/step/config/defaults.json
   environment:
@@ -57,8 +57,9 @@
     mode: "0644"
   register: smallstep_ca_copy
 
-- name: Update CA Trust
+- name: Update CA Trust # noqa: no-handler
   ansible.builtin.command: update-ca-certificates
+  changed_when: false
   when: smallstep_ca_copy is changed
 
 - name: Place SmallStep SystemD Renewal Service
@@ -148,3 +149,121 @@
     name: fluent-bit
     state: restarted
   when: fluentbit_config.changed or fluentbit_parsers.changed
+
+# CIS Hardening
+
+# yamllint disable rule:line-length
+# inspec exec git@github.com:dev-sec/cis-dil-benchmark.git --target ssh://rbelgrave@haproxy-t2-1.tailnet-047c.ts.net --sudo --reporter cli html:index.html -i ~/.ssh/id_ed25519
+# yamllint enable rule:line-length
+
+# Current build as of 12/20/24:
+#   Proxmox Ubuntu 24.04 LXC:
+#   Ubuntu 24.04 VM:
+
+- name: "1.1.1.1 - 1.1.1.7"
+  ansible.builtin.copy:
+    dest: /etc/modprobe.d/disabled-fs-ansible.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      install cramfs /bin/true
+      install freevxfs /bin/true
+      install jffs2 /bin/true
+      install hfs /bin/true
+      install hfsplus /bin/true
+      install squashfs /bin/true
+      install udf /bin/true
+      install vfat /bin/true
+      install usb_storage /bin/true
+
+- name: "2.2.16"
+  ansible.builtin.systemd_service:
+    name: rsync
+    enabled: false
+    masked: true
+
+- name: "3.1.2"
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    reload: true
+  with_items:
+    - { name: "net.ipv4.conf.all.send_redirects", value: 0 }
+    - { name: "net.ipv4.conf.default.send_redirects", value: 0 }
+
+- name: "3.2.1"
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    reload: true
+  with_items:
+    - { name: "net.ipv4.conf.all.accept_source_route", value: 0 }
+    - { name: "net.ipv4.conf.default.accept_source_route", value: 0 }
+    - { name: "net.ipv6.conf.all.accept_source_route", value: 0 }
+    - { name: "net.ipv6.conf.default.accept_source_route", value: 0 }
+
+- name: "3.2.2"
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    reload: true
+  with_items:
+    - { name: "net.ipv4.conf.all.accept_redirects", value: 0 }
+    - { name: "net.ipv4.conf.default.accept_redirects", value: 0 }
+    - { name: "net.ipv6.conf.all.accept_redirects", value: 0 }
+    - { name: "net.ipv6.conf.default.accept_redirects", value: 0 }
+
+- name: "3.2.3"
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    reload: true
+  with_items:
+    - { name: "net.ipv4.conf.all.secure_redirects", value: 0 }
+    - { name: "net.ipv4.conf.default.secure_redirects", value: 0 }
+
+- name: "3.2.4"
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    reload: true
+  with_items:
+    - { name: "net.ipv4.conf.all.log_martians", value: 1 }
+    - { name: "net.ipv4.conf.default.log_martians", value: 1 }
+
+- name: "3.2.7"
+  sansible.posix.ysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    reload: true
+  with_items:
+    - { name: "net.ipv4.conf.all.rp_filter", value: 1 }
+    - { name: "net.ipv4.conf.default.rp_filter", value: 1 }
+# We like ipv6 RA so not setting this
+# - name: "3.2.9"
+#   ansible.posix.sysctl:
+#     name: "{{ item.name }}"
+#     value: "{{ item.value }}"
+#     reload: true
+#   with_items:
+#     - {name: "net.ipv6.conf.all.accept_ra", value: 0}
+#     - {name: "net.ipv6.conf.default.accept_ra", value: 0}
+
+- name: "3.4.1 - 3.4.4"
+  ansible.builtin.copy:
+    dest: /etc/modprobe.d/disabled-network-ansible.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      install dccp /bin/true
+      install sctp /bin/true
+      install rds /bin/true
+      install tipc /bin/true
+
+- name: "5.2 SSH Server Configuration Template"
+  ansible.builtin.template:
+    src: etc/ssh/sshd_config
+    dest: /etc/ssh/sshd_config
+    mode: "0644"
