@@ -267,3 +267,10 @@
     src: etc/ssh/sshd_config
     dest: /etc/ssh/sshd_config
     mode: "0644"
+  register: 5_2_ssh_server_config
+
+- name: "5.2 Restart SSH Server"
+  ansible.builtin.systemd:
+    name: sshd
+    state: restarted
+  when: 5_2_ssh_server_config.changed
