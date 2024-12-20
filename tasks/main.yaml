@@ -120,7 +120,7 @@
   ansible.builtin.template:
     src: etc/fluent-bit/fluent-bit.conf
     dest: /etc/fluent-bit/fluent-bit.conf
-    mode: "0660"
+    mode: "0644"
     owner: root
     group: root
   register: fluentbit_config
@@ -129,7 +129,7 @@
   ansible.builtin.template:
     src: etc/fluent-bit/parsers.conf
     dest: /etc/fluent-bit/parsers.conf
-    mode: "0666"
+    mode: "0644"
     owner: root
     group: root
   register: fluentbit_parsers
@@ -259,7 +259,7 @@
     dest: /etc/modprobe.d/disabled-network-ansible.conf
     owner: root
     group: root
-    mode: "0644"
+    mode: "0600"
     content: |
       install dccp /bin/true
       install sctp /bin/true
