@@ -2,6 +2,10 @@
 # TODO: CIS benchmark fixing once it's released for 24.04
 
 # TODO: add NTP server
+- name: Remove password from user rbelgrave
+  ansible.builtin.user:
+    name: rbelgrave
+    password: '*'
 
 - name: Set timezone
   community.general.timezone:
