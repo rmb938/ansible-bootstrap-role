@@ -80,36 +80,6 @@
     daemon_reload: true
   when: smallstep_ca_systemd_renewal_service_template.changed or smallstep_ca_systemd_renewal_timer_template.changed
 
-- name: Create default certificate key
-  community.crypto.openssl_privatekey:
-    path: /etc/ssl/private/default.pem.key
-    curve: secp384r1
-    type: ECC
-
-- name: Create default CSR
-  community.crypto.openssl_csr_pipe:
-    privatekey_path: /etc/ssl/private/default.pem.key
-    common_name: "{{ ansible_hostname }}"
-    country_name: "US"
-    extended_key_usage:
-      - serverAuth
-      - clientAuth
-    organization_name: "Home Lab"
-    organizational_unit_name: "Host Provisioning Self-Signed"
-    state_or_province_name: "Minnesota"
-    key_usage:
-      - digitalSignature
-    key_usage_critical: true
-    use_common_name_for_san: true
-  register: csr
-
-- name: Create default certificate pem
-  community.crypto.x509_certificate:
-    path: /etc/ssl/private/default.pem
-    csr_content: "{{ csr.csr }}"
-    privatekey_path: /etc/ssl/private/default.pem.key
-    provider: selfsigned
-
 - name: Install Prometheus Node Exporter
   ansible.builtin.package:
     name:
