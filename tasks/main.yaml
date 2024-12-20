@@ -270,7 +270,7 @@
   ansible.builtin.template:
     src: etc/ssh/sshd_config
     dest: /etc/ssh/sshd_config
-    mode: "0644"
+    mode: "0600"
   register: ssh_server_config_5_2
 
 - name: "5.2 Restart SSH Server"  # noqa: no-handler
