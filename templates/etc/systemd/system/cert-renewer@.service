@@ -11,7 +11,7 @@ User=root
 
 Environment=STEPPATH=/etc/step \
             CERT_LOCATION=/etc/ssl/private/%i.crt \
-            KEY_LOCATION=/etc/ssl/private/%i.crt.key
+            KEY_LOCATION=/etc/ssl/private/%i.crt.key \
             SERVICE=%i
 
 ; ExecCondition checks if the certificate is ready for renewal,
@@ -25,7 +25,7 @@ ExecStart=/usr/bin/step ca renew --force ${CERT_LOCATION} ${KEY_LOCATION}
 ; Try to reload or restart the systemd service that relies on this cert-renewer
 ; If the relying service doesn't exist, forge ahead.
 ; (In systemd <229, use `reload-or-try-restart` instead of `try-reload-or-restart`)
-; ExecStartPost=/usr/bin/env sh -c "! systemctl --quiet is-active ${SERVICE}.service || systemctl try-reload-or-restart ${SERVICE}"
+ExecStartPost=/usr/bin/env sh -c "! systemctl --quiet is-active ${SERVICE}.service || systemctl try-reload-or-restart ${SERVICE}"
 
 [Install]
 WantedBy=multi-user.target
