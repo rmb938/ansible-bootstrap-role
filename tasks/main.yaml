@@ -66,24 +66,54 @@
   changed_when: false
   when: smallstep_ca_copy is changed
 
-- name: Place SmallStep SystemD Renewal Service
+- name: Create step-ca certs directory
+  ansible.builtin.file:
+    path: /etc/ssl/private/step-ca
+    state: directory
+    mode: "0710"
+
+- name: Deploy check-cert-renewal.sh
   ansible.builtin.template:
-    src: etc/systemd/system/cert-renewer@.service
-    dest: /etc/systemd/system/cert-renewer@.service
+    src: usr/local/bin/step-check-cert-renewal
+    dest: /usr/local/bin/step-check-cert-renewal
+    mode: "0755"
+
+- name: Deploy renew-step-certs.sh
+  ansible.builtin.template:
+    src: usr/local/bin/step-renew-step-certs
+    dest: /usr/local/bin/step-renew-step-certs
+    mode: "0755"
+
+- name: Place step certs SystemD Renewal Service
+  ansible.builtin.template:
+    src: etc/systemd/system/step-cert-renewer.service
+    dest: /etc/systemd/system/step-cert-renewer.service
     mode: "0644"
   register: smallstep_ca_systemd_renewal_service_template
 
-- name: Place SmallStep SystemD Renewal Timer
+- name: Place step certs Renewal Timer
   ansible.builtin.template:
-    src: etc/systemd/system/cert-renewer@.timer
-    dest: /etc/systemd/system/cert-renewer@.timer
+    src: etc/systemd/system/step-cert-renewer.timer
+    dest: /etc/systemd/system/step-cert-renewer.timer
     mode: "0644"
   register: smallstep_ca_systemd_renewal_timer_template
+
+- name: Create step certs systemd override folder
+  ansible.builtin.file:
+    path: /etc/systemd/system/step-cert-renewer.service.d/
+    state: directory
+    mode: "0755"
 
 - name: Reload SystemD # noqa: no-handler
   ansible.builtin.systemd:
     daemon_reload: true
   when: smallstep_ca_systemd_renewal_service_template.changed or smallstep_ca_systemd_renewal_timer_template.changed
+
+- name: Enable and start the timer
+  ansible.builtin.systemd_service:
+    name: step-cert-renewer.timer
+    state: started
+    enabled: true
 
 - name: Install Prometheus Node Exporter
   ansible.builtin.package:
@@ -162,6 +192,8 @@
 
 # Current build as of 12/20/24:
 #   Proxmox Ubuntu 24.04 LXC:
+#     Profile Summary: 121 successful controls, 81 control failures, 32 controls skipped
+#     Test Summary: 941 successful, 542 failures, 32 skipped
 #   Ubuntu 24.04 VM:
 
 - name: "1.1.1.1 - 1.1.1.7"
