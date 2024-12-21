@@ -12,7 +12,7 @@ find "$CERT_DIR" -maxdepth 1 -name "*.crt" -print0 | while IFS= read -r -d $'\0'
   if [ -f "$key_file" ]; then
     if step certificate needs-renewal "$cert_file"; then
       echo "$cert_file needs renewal. Attempting..."
-      step ca renew "$cert_file" "$key_file" --force
+      step ca renew "$cert_file" "$key_file" --force --mtls=false
       if [[ $? -eq 0 ]]; then
         echo "Successfully renewed: $cert_file"
       else
