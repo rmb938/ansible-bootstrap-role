@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Set variables (adjust as needed)
+STEPPATH=/etc/step
 CERT_DIR="/etc/ssl/private/step-ca"
 
 # Find all certificate files (*.crt or *.pem, adjust as needed)
