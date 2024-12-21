@@ -47,7 +47,7 @@
     deb: https://dl.smallstep.com/cli/docs-cli-install/latest/step-cli_amd64.deb
 
 - name: Configure Step CLI
-  ansible.builtin.command: "step ca bootstrap --ca-url https://cuboid-topi.rmb1993-gmail-com.ca.smallstep.com --fingerprint eb136a5118931a2306964469705323521dda8c43d26ec67e1c5508eb123f9c70" # noqa: yaml[line-length]
+  ansible.builtin.command: "step ca bootstrap --ca-url {{ step_ca_url }} --fingerprint eb136a5118931a2306964469705323521dda8c43d26ec67e1c5508eb123f9c70" # noqa: yaml[line-length]
   args:
     creates: /etc/step/config/defaults.json
   environment:
