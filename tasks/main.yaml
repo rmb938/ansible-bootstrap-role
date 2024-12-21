@@ -53,6 +53,16 @@
   environment:
     STEPPATH: "/etc/step"
 
+- name: Update Step Dir permissions
+  ansible.builtin.file:
+    path: /etc/step
+    mode: "0755"
+
+- name: Update Step Dir permissions
+  ansible.builtin.file:
+    path: /etc/step/config
+    mode: "0755"
+
 - name: Copy SmallStep CA to System Store
   ansible.builtin.copy:
     remote_src: true
