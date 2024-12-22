@@ -31,6 +31,24 @@ Unattended-Upgrade::Origins-Pattern {
         "site=packages.fluentbit.io";
 };
 
+// Customize dpkg to force install new versions when there is a configuration
+// difference. It will keep the old config and place the new one with a
+// .dpkg-dist suffix. Details about the flags bellow
+//
+// From: https://raphaelhertzog.com/2010/09/21/debian-conffile-configuration-file-managed-by-dpkg/
+// --force-confold: do not modify the current configuration file, the new 
+// version is installed with a .dpkg-dist suffix. With this option alone, 
+// even configuration files that you have not modified are left untouched. 
+// You need to combine it with --force-confdef to let dpkg overwrite 
+// configuration files that you have not modified.
+// --force-confdef: ask dpkg to decide alone when it can and prompt 
+// otherwise. This is the default behavior of dpkg and this option is 
+// mainly useful in combination with --force-confold.
+Dpkg::Options {
+   "--force-confdef";
+   "--force-confold";
+};
+
 // Python regular expressions, matching packages to exclude from upgrading
 Unattended-Upgrade::Package-Blacklist {
     // The following matches all packages starting with linux-
