@@ -194,6 +194,14 @@
     state: restarted
   when: fluentbit_config.changed or fluentbit_parsers.changed
 
+- name: Set Shell Timeout
+  ansible.builtin.copy:
+    content: |
+      readonly TMOUT=300
+      export TMOUT
+    dest: /etc/profile.d/shell_timeout.sh
+    mode: "0644"
+
 # CIS Hardening
 
 # yamllint disable rule:line-length
