@@ -2,6 +2,9 @@
 # TODO: CIS benchmark fixing once it's released for 24.04
 
 # TODO: add NTP server
+- name: Service Facts
+  ansible.builtin.service_facts:
+
 - name: Remove password from user rbelgrave
   ansible.builtin.user:
     name: rbelgrave
@@ -212,7 +215,8 @@
 #   Proxmox Ubuntu 24.04 LXC:
 #     Profile Summary: 121 successful controls, 81 control failures, 32 controls skipped
 #     Test Summary: 941 successful, 542 failures, 32 skipped
-#   Ubuntu 24.04 VM:
+#   Ubuntu 24.04 Proxmox VM:
+#   Ubuntu 24.04 GCP VM:
 
 - name: "1.1.1.1 - 1.1.1.7"
   ansible.builtin.copy:
@@ -323,8 +327,14 @@
     mode: "0600"
   register: ssh_server_config_5_2
 
-- name: "5.2 Restart SSH Server"  # noqa: no-handler
+- name: "5.2 Restart SSH Server SSH"  # noqa: no-handler
+  ansible.builtin.systemd:
+    name: ssh
+    state: restarted
+  when: ssh_server_config_5_2.changed and "ssh" in ansible_facts.services
+
+- name: "5.2 Restart SSH Server SSHD"  # noqa: no-handler
   ansible.builtin.systemd:
     name: sshd
     state: restarted
-  when: ssh_server_config_5_2.changed
+  when: ssh_server_config_5_2.changed and "sshd" in ansible_facts.services
