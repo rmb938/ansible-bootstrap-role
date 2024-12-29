@@ -118,12 +118,6 @@
     mode: "0644"
   register: smallstep_ca_systemd_renewal_timer_template
 
-- name: Create step certs systemd override folder
-  ansible.builtin.file:
-    path: /etc/systemd/system/step-cert-renewer.service.d/
-    state: directory
-    mode: "0755"
-
 - name: Reload SystemD # noqa: no-handler
   ansible.builtin.systemd:
     daemon_reload: true
@@ -134,6 +128,12 @@
     name: step-cert-renewer.timer
     state: started
     enabled: true
+
+- name: Create step certs systemd override folder
+  ansible.builtin.file:
+    path: /etc/systemd/system/step-cert-renewer.service.d/
+    state: directory
+    mode: "0755"
 
 - name: Install Prometheus Node Exporter
   ansible.builtin.package:
