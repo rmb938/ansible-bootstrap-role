@@ -5,6 +5,13 @@
 - name: Service Facts
   ansible.builtin.service_facts:
 
+- name: Install Qemu Guest Agents
+  ansible.builtin.package:
+    name:
+      - qemu-guest-agent
+    state: present
+  when: ansible_virtualization_type == "kvm"
+
 - name: Remove password from user rbelgrave
   ansible.builtin.user:
     name: rbelgrave
