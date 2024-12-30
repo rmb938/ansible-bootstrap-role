@@ -12,6 +12,19 @@
     state: present
   when: ansible_virtualization_type == "kvm"
 
+- name: Remove Hostname from /etc/hosts
+  ansible.builtin.lineinfile:
+    dest: /etc/hosts
+    state: absent
+    line: "127.0.1.1 {{ ansible_fqdn }} {{ ansible_hostname }}"
+
+- name: Remove Hostname line from hosts.debian.tmpl
+  ansible.builtin.lineinfile:
+    dest: /etc/cloud/templates/hosts.debian.tmpl
+    state: absent
+    line: "127.0.1.1 {% raw %}{{fqdn}} {{hostname}}{% endraw %}"
+  when: ansible_virtualization_type == "kvm"
+
 - name: Remove password from user rbelgrave
   ansible.builtin.user:
     name: rbelgrave
