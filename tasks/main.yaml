@@ -129,12 +129,6 @@
     state: started
     enabled: true
 
-- name: Create step certs systemd override folder
-  ansible.builtin.file:
-    path: /etc/systemd/system/step-cert-renewer.service.d/
-    state: directory
-    mode: "0755"
-
 - name: Install Prometheus Node Exporter
   ansible.builtin.package:
     name:
