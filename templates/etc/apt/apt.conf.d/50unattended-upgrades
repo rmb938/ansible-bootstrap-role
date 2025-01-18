@@ -27,6 +27,8 @@ Unattended-Upgrade::Allowed-Origins {
 };
 
 Unattended-Upgrade::Origins-Pattern {
+        // smallstep packages
+        "site=pkgs.infra.smallstep.com";
         // fluentbit upgrades
         "site=packages.fluentbit.io";
 };

@@ -12,14 +12,41 @@
     state: present
   when: ansible_virtualization_type == "kvm"
 
-- name: Remove password from user rbelgrave
-  ansible.builtin.user:
-    name: rbelgrave
-    password: '*'
-
 - name: Set timezone
   community.general.timezone:
     name: America/Chicago
+
+- name: Upgrade all packages
+  ansible.builtin.apt:
+    upgrade: "full"
+    autoremove: true
+    autoclean: true
+    update_cache: true
+
+- name: Reboot
+  ansible.builtin.reboot:
+    post_reboot_delay: 30
+    reboot_timeout: 300
+
+- name: Install Tailscale keyring
+  ansible.builtin.get_url:
+    url: https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg
+    dest: /usr/share/keyrings/tailscale-archive-keyring.gpg
+    checksum: sha256:3e03dacf222698c60b8e2f990b809ca1b3e104de127767864284e6c228f1fb39
+    mode: "0644"
+
+- name: Add Tailscale repo
+  ansible.builtin.apt_repository:
+    repo: >
+      deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg]
+      https://pkgs.tailscale.com/stable/ubuntu noble main
+    state: present
+
+- name: Install Tailscale
+  ansible.builtin.package:
+    name:
+      - tailscale
+    state: present
 
 - name: Install unattended-upgrades
   ansible.builtin.package:
@@ -51,89 +78,59 @@
       - vim
     state: present
 
-- name: Install Step CLI
-  # TODO: smallstep doesn't have a apt repo, so we need a way to keep this updated
-  ansible.builtin.apt:
-    deb: https://dl.smallstep.com/cli/docs-cli-install/latest/step-cli_amd64.deb
-
-- name: Configure Step CLI
-  ansible.builtin.command: "step ca bootstrap --ca-url {{ step_ca_url }} --fingerprint eb136a5118931a2306964469705323521dda8c43d26ec67e1c5508eb123f9c70" # noqa: yaml[line-length]
-  args:
-    creates: /etc/step/config/defaults.json
-  environment:
-    STEPPATH: "/etc/step"
-
-- name: Update Step Dir permissions
-  ansible.builtin.file:
-    path: /etc/step
-    mode: "0755"
-
-- name: Update Step Dir permissions
-  ansible.builtin.file:
-    path: /etc/step/config
-    mode: "0755"
-
-- name: Copy SmallStep CA to System Store
-  ansible.builtin.copy:
-    remote_src: true
-    src: /etc/step/certs/root_ca.crt
-    dest: /usr/local/share/ca-certificates/smallstep.crt
+- name: Install Smallstep keyring
+  ansible.builtin.get_url:
+    url: https://packages.smallstep.com/keys/apt/repo-signing-key.gpg
+    dest: /usr/share/keyrings/smallstep.asc
+    checksum: sha256:3ecc63922b7795eb23fdc449ff9396f9114cb3cf186d6f5b53ad4cc3ebfbb11f
     mode: "0644"
-  register: smallstep_ca_copy
 
-- name: Update CA Trust # noqa: no-handler
+- name: Add Smallstep repo
+  ansible.builtin.apt_repository:
+    repo: >
+      deb [signed-by=/usr/share/keyrings/smallstep.asc]
+      https://pkgs.infra.smallstep.com/stable/debian debs main
+    state: present
+
+- name: Install step cli
+  ansible.builtin.package:
+    name:
+      - step-cli
+    state: present
+
+- name: Download Homelab Root
+  ansible.builtin.command: >-
+    step ca root /usr/local/share/ca-certificates/smallstep-homelab-prod.crt
+    --ca-url {{ step_ca_url }}
+    --fingerprint {{ step_ca_fingerprint }}
+  args:
+    creates: /usr/local/share/ca-certificates/smallstep-homelab-prod.crt
+  when: step_ca_url != None
+  register: download_homelab_root
+
+- name: Make sure Homelab Root is world readable  # noqa: no-handler
+  ansible.builtin.file:
+    path: /usr/local/share/ca-certificates/smallstep-homelab-prod.crt
+    mode: "0644"
+  when: download_homelab_root.changed
+
+- name: Update CA Trust  # noqa: no-handler
   ansible.builtin.command: update-ca-certificates
   changed_when: false
-  when: smallstep_ca_copy is changed
-
-- name: Create step-ca certs directory
-  ansible.builtin.file:
-    path: /etc/ssl/private/step-ca
-    state: directory
-    mode: "0710"
-
-- name: Deploy check-cert-renewal.sh
-  ansible.builtin.template:
-    src: usr/local/bin/step-check-cert-renewal
-    dest: /usr/local/bin/step-check-cert-renewal
-    mode: "0755"
-
-- name: Deploy renew-step-certs.sh
-  ansible.builtin.template:
-    src: usr/local/bin/step-renew-step-certs
-    dest: /usr/local/bin/step-renew-step-certs
-    mode: "0755"
-
-- name: Place step certs SystemD Renewal Service
-  ansible.builtin.template:
-    src: etc/systemd/system/step-cert-renewer.service
-    dest: /etc/systemd/system/step-cert-renewer.service
-    mode: "0644"
-  register: smallstep_ca_systemd_renewal_service_template
-
-- name: Place step certs Renewal Timer
-  ansible.builtin.template:
-    src: etc/systemd/system/step-cert-renewer.timer
-    dest: /etc/systemd/system/step-cert-renewer.timer
-    mode: "0644"
-  register: smallstep_ca_systemd_renewal_timer_template
-
-- name: Reload SystemD # noqa: no-handler
-  ansible.builtin.systemd:
-    daemon_reload: true
-  when: smallstep_ca_systemd_renewal_service_template.changed or smallstep_ca_systemd_renewal_timer_template.changed
-
-- name: Enable and start the timer
-  ansible.builtin.systemd_service:
-    name: step-cert-renewer.timer
-    state: started
-    enabled: true
+  when: download_homelab_root.changed
 
 - name: Install Prometheus Node Exporter
   ansible.builtin.package:
     name:
       - prometheus-node-exporter
     state: present
+
+# TODO: place override for node exporter
+# ConditionPathExists=!/var/tmp/packer
+
+# - name: Reload SystemD
+#   ansible.builtin.systemd:
+#     daemon_reload: true
 
 - name: Start and Enable Prometheus Node Exporter
   ansible.builtin.systemd:
@@ -176,6 +173,68 @@
     mode: "0644"
     owner: root
     group: root
+  register: fluentbit_base_parsers
+
+- name: Create fluentbit inputs directory
+  ansible.builtin.file:
+    path: /etc/fluent-bit-inputs.d/
+    state: directory
+    mode: "0755"
+    owner: root
+    group: root
+
+- name: Configure fluentbit inputs
+  ansible.builtin.template:
+    src: etc/fluent-bit-inputs.d/{{ item }}
+    dest: /etc/fluent-bit-inputs.d/{{ item }}
+    mode: "0644"
+    owner: root
+    group: root
+  with_items:
+    - 00_auth-log.conf
+    - 00_kern-log.conf
+    - 00_systemd.conf
+    - 00_unattended-upgrades-log.conf
+  register: fluentbit_inputs
+
+- name: Create fluentbit filters directory
+  ansible.builtin.file:
+    path: /etc/fluent-bit-filters.d/
+    state: directory
+    mode: "0755"
+    owner: root
+    group: root
+
+- name: Configure fluentbit filters
+  ansible.builtin.template:
+    src: etc/fluent-bit-filters.d/{{ item }}
+    dest: /etc/fluent-bit-filters.d/{{ item }}
+    mode: "0644"
+    owner: root
+    group: root
+  with_items:
+    - 00_hostname.conf
+    - 01_systemd.conf
+    - 02_system-files.conf
+  register: fluentbit_filters
+
+- name: Create fluentbit parsers directory
+  ansible.builtin.file:
+    path: /etc/fluent-bit-parsers.d/
+    state: directory
+    mode: "0755"
+    owner: root
+    group: root
+
+- name: Configure fluentbit parsers
+  ansible.builtin.template:
+    src: etc/fluent-bit-parsers.d/{{ item }}
+    dest: /etc/fluent-bit-parsers.d/{{ item }}
+    mode: "0644"
+    owner: root
+    group: root
+  with_items:
+    - 00_syslog-rfc3164-local-custom.conf
   register: fluentbit_parsers
 
 - name: Create fluentbit state directory
@@ -185,6 +244,13 @@
     owner: root
     group: root
     state: directory
+
+# TODO: place override for fluentbit
+# ConditionPathExists=!/var/tmp/packer
+
+# - name: Reload SystemD
+#   ansible.builtin.systemd:
+#     daemon_reload: true
 
 - name: Start fluentbit
   ansible.builtin.systemd:
@@ -196,7 +262,14 @@
   ansible.builtin.systemd:
     name: fluent-bit
     state: restarted
-  when: fluentbit_config.changed or fluentbit_parsers.changed
+  when: (not is_packer) and
+    (
+      fluentbit_config.changed or
+      fluentbit_base_parsers.changed or
+      fluentbit_inputs.changed or
+      fluentbit_filters.changed or
+      fluentbit_parsers.changed
+    )
 
 - name: Set Shell Timeout
   ansible.builtin.copy:
@@ -209,15 +282,13 @@
 # CIS Hardening
 
 # yamllint disable rule:line-length
-# inspec exec git@github.com:dev-sec/cis-dil-benchmark.git --target ssh://rbelgrave@haproxy-t2-1.tailnet-047c.ts.net --sudo --reporter cli html:index.html -i ~/.ssh/id_ed25519
+# inspec exec git@github.com:dev-sec/cis-dil-benchmark.git --target ssh://ubuntu@192.168.52.100 --sudo --reporter cli html:index.html -i ~/.ssh/id_ed25519
 # yamllint enable rule:line-length
 
-# Current build as of 12/20/24:
-#   Proxmox Ubuntu 24.04 LXC:
-#     Profile Summary: 121 successful controls, 81 control failures, 32 controls skipped
-#     Test Summary: 941 successful, 542 failures, 32 skipped
-#   Ubuntu 24.04 Proxmox VM:
-#   Ubuntu 24.04 GCP VM:
+#   Ubuntu 24.04 Proxmox VM (Cloud Image) as of 1/2/25:
+#     Test Summary: 806 successful, 288 failures, 32 skipped
+#   Ubuntu 24.04 Raspberry Pi (UEFI + Arm Install):
+#     Test Summary:
 
 - name: "1.1.1.1 - 1.1.1.7"
   ansible.builtin.copy:
@@ -299,6 +370,7 @@
   with_items:
     - { name: "net.ipv4.conf.all.rp_filter", value: 1 }
     - { name: "net.ipv4.conf.default.rp_filter", value: 1 }
+
 # We like ipv6 RA so not setting this
 # - name: "3.2.9"
 #   ansible.posix.sysctl:
@@ -328,14 +400,17 @@
     mode: "0600"
   register: ssh_server_config_5_2
 
-- name: "5.2 Restart SSH Server SSH"  # noqa: no-handler
+- name: "5.2 Restart SSH Server SSH"
   ansible.builtin.systemd:
     name: ssh
     state: restarted
-  when: ssh_server_config_5_2.changed and "ssh" in ansible_facts.services
+  when: is_packer or ssh_server_config_5_2.changed
 
-- name: "5.2 Restart SSH Server SSHD"  # noqa: no-handler
-  ansible.builtin.systemd:
-    name: sshd
-    state: restarted
-  when: ssh_server_config_5_2.changed and "sshd" in ansible_facts.services
+# Resetting ssh connection because we want to restart ssh
+# So we need to make sure we can still ssh
+- name: "5.2 Reset connection"
+  ansible.builtin.meta: reset_connection
+
+- name: "5.2 Test SSH Connection"
+  ansible.builtin.command: "echo 'Hello World'"
+  changed_when: false

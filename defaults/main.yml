@@ -1,4 +1,4 @@
 ---
-fluentbit_additional_inputs: []
-fluentbit_additional_filters: []
-step_ca_url: https://step-ca-ra.rmb938.me
+is_packer: false
+step_ca_url: null
+step_ca_fingerprint: ""
