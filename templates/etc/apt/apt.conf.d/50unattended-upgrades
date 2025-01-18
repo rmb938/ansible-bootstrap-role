@@ -21,9 +21,6 @@ Unattended-Upgrade::Allowed-Origins {
         // apt-cache policy
         // auto upgrade tailscale repo, it has no a=
         "Tailscale:";
-
-        // TODO: allow adding more origins via var
-        // "LP-PPA-vbernat-haproxy-3.0:${distro_codename}";
 };
 
 Unattended-Upgrade::Origins-Pattern {

@@ -2,9 +2,6 @@
 # TODO: CIS benchmark fixing once it's released for 24.04
 
 # TODO: add NTP server
-- name: Service Facts
-  ansible.builtin.service_facts:
-
 - name: Install Qemu Guest Agents
   ansible.builtin.package:
     name:
@@ -40,6 +37,7 @@
     repo: >
       deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg]
       https://pkgs.tailscale.com/stable/ubuntu noble main
+    filename: tailscale.list
     state: present
 
 - name: Install Tailscale
@@ -90,6 +88,7 @@
     repo: >
       deb [signed-by=/usr/share/keyrings/smallstep.asc]
       https://pkgs.infra.smallstep.com/stable/debian debs main
+    filename: smallstep.list
     state: present
 
 - name: Install step cli
@@ -150,6 +149,7 @@
     repo: >
       deb [signed-by=/usr/share/keyrings/fluentbit-keyring.asc]
       https://packages.fluentbit.io/ubuntu/noble noble main
+    filename: fluentbit.list
     state: present
 
 - name: Install fluentbit
