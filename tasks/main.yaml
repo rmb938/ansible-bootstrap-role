@@ -299,7 +299,6 @@
     group: root
     mode: "0644"
     content: |
-      ## {{ ansible_managed }}
       install cramfs /bin/true
       install freevxfs /bin/true
       install jffs2 /bin/true
