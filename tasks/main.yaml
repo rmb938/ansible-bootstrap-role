@@ -299,6 +299,7 @@
     group: root
     mode: "0644"
     content: |
+      ## {{ ansible_managed }}
       install cramfs /bin/true
       install freevxfs /bin/true
       install jffs2 /bin/true
@@ -307,7 +308,9 @@
       install squashfs /bin/true
       install udf /bin/true
       install vfat /bin/true
+      {% if ansible_system_vendor != "Raspberry Pi Foundation" %}
       install usb_storage /bin/true
+      {% endif %}
 
 - name: "2.2.16"
   ansible.builtin.systemd_service:
