@@ -7,7 +7,7 @@
     name:
       - qemu-guest-agent
     state: present
-  when: ansible_virtualization_type == "guest" and ansible_virtualization_type == "kvm"
+  when: ansible_virtualization_role == "guest" and ansible_virtualization_type == "kvm"
 
 - name: Set timezone
   community.general.timezone:
