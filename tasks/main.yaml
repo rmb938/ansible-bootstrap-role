@@ -99,12 +99,6 @@
       - step-cli
     state: present
 
-- name: Allow step cli to bind to port 80
-  community.general.capabilities:
-    path: /usr/bin/step-cli
-    capability: cap_net_bind_service=eip
-    state: present
-
 - name: Download Homelab Root
   ansible.builtin.command: >-
     step ca root /usr/local/share/ca-certificates/smallstep-homelab-prod.crt
