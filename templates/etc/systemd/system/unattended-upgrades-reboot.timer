@@ -1,0 +1,13 @@
+# {{ ansible_managed }}
+
+[Unit]
+Description="unattended-upgrades-reboot"
+
+[Timer]
+# Daily at 4am +/- 3 hours
+OnCalendar=*-*-* 4:00:00
+RandomizedDelaySec=10800
+Unit=unattended-upgrades-reboot.service
+
+[Install]
+WantedBy=multi-user.target

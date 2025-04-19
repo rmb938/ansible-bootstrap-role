@@ -21,11 +21,33 @@
     update_cache: true
   register: upgrade_all
 
-- name: Reboot  # noqa: no-handler
+- name: Reboot # noqa: no-handler
   ansible.builtin.reboot:
     post_reboot_delay: 30
     reboot_timeout: 300
   when: upgrade_all.changed
+
+- name: Place ovn-ovsdb-connection service
+  ansible.builtin.template:
+    src: etc/systemd/system/unattended-upgrades-reboot.service
+    dest: /etc/systemd/system/unattended-upgrades-reboot.service
+    mode: "0644"
+
+- name: Place unattended-upgrades-reboot timer
+  ansible.builtin.template:
+    src: etc/systemd/system/unattended-upgrades-reboot.timer
+    dest: /etc/systemd/system/unattended-upgrades-reboot.timer
+    mode: "0644"
+
+- name: SystemD daemon reload
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Enable and start unattended-upgrades-reboot timer
+  ansible.builtin.systemd:
+    name: unattended-upgrades-reboot.timer
+    state: started
+    enabled: true
 
 - name: Install Tailscale keyring
   ansible.builtin.get_url:
@@ -109,13 +131,13 @@
   when: step_ca_url != None
   register: download_homelab_root
 
-- name: Make sure Homelab Root is world readable  # noqa: no-handler
+- name: Make sure Homelab Root is world readable # noqa: no-handler
   ansible.builtin.file:
     path: /usr/local/share/ca-certificates/smallstep-homelab-prod.crt
     mode: "0644"
   when: download_homelab_root.changed
 
-- name: Update CA Trust  # noqa: no-handler
+- name: Update CA Trust # noqa: no-handler
   ansible.builtin.command: update-ca-certificates
   changed_when: false
   when: download_homelab_root.changed
@@ -266,11 +288,11 @@
     state: restarted
   when: (not is_packer) and
     (
-      fluentbit_config.changed or
-      fluentbit_base_parsers.changed or
-      fluentbit_inputs.changed or
-      fluentbit_filters.changed or
-      fluentbit_parsers.changed
+    fluentbit_config.changed or
+    fluentbit_base_parsers.changed or
+    fluentbit_inputs.changed or
+    fluentbit_filters.changed or
+    fluentbit_parsers.changed
     )
 
 - name: Set Shell Timeout

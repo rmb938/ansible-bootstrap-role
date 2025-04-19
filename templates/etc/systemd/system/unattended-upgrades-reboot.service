@@ -1,0 +1,21 @@
+# {{ ansible_managed }}
+
+[Unit]
+Description="unattended-upgrades-reboot"
+
+ConditionPathExists=/var/run/reboot-required
+
+[Service]
+Type=oneshot
+RemainAfterExit=no
+
+ProtectSystem=full
+ProtectHome=read-only
+PrivateTmp=yes
+
+# Reboot exactly 24 hours from now and remove the file
+ExecStart=/sbin/shutdown -r +1440
+ExecStart=/usr/bin/rm -rf /var/run/reboot-required
+
+[Install]
+WantedBy=multi-user.target
