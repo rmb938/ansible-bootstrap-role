@@ -13,6 +13,11 @@
   community.general.timezone:
     name: America/Chicago
 
+- name: Check if already apt upgraded
+  stat:
+    path: /ansible_bootstrap_apt_upgrade
+  register: ansible_bootstrap_apt_upgrade
+
 - name: Upgrade all packages
   ansible.builtin.apt:
     upgrade: "full"
@@ -20,6 +25,14 @@
     autoclean: true
     update_cache: true
   register: upgrade_all
+  when: ansible_bootstrap_apt_upgrade.stat.exists
+
+- name: Bootstrap Upgrade
+  ansible.builtin.copy:
+    dest: /ansible_bootstrap_apt_upgrade
+    content: ""
+    force: false
+    mode: "0755"
 
 - name: Reboot # noqa: no-handler
   ansible.builtin.reboot:
@@ -27,7 +40,7 @@
     reboot_timeout: 300
   when: upgrade_all.changed
 
-- name: Place ovn-ovsdb-connection service
+- name: Place unattended-upgrades-reboot service
   ansible.builtin.template:
     src: etc/systemd/system/unattended-upgrades-reboot.service
     dest: /etc/systemd/system/unattended-upgrades-reboot.service
