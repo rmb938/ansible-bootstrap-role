@@ -25,7 +25,7 @@
     autoclean: true
     update_cache: true
   register: upgrade_all
-  when: ansible_bootstrap_apt_upgrade.stat.exists
+  when: not ansible_bootstrap_apt_upgrade.stat.exists
 
 - name: Bootstrap Upgrade
   ansible.builtin.copy:
